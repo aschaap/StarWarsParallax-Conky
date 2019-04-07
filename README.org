@@ -1,0 +1,156 @@
+* Star Wars Parallax Background Conky
+Dependencies: Conky with Lua and Cairo support and Imlib2 support in Lua, along with ~xdotool~ and ~xwininfo~.
+Limitations: The background image limits the maximum size to 1080p, and this size is hard-coded into the Lua file.
+
+The original idea and images are from nirosat's Rainmeter skin:
+https://www.deviantart.com/nirosat/art/Rainmeter-3D-XWing-Parallax-612069530
+The Lua code is based on "interactive conky" Lua by mrpeachy:
+https://crunchbang.org/forums/viewtopic.php?pid=199493#p199493
+- includes simplified image function from brndnmtthws:
+https://github.com/brndnmtthws/conky/wiki/Using-Lua-scripts-(Part-13):-Useful-functions-and-code
+
+
+** Lua code
+A brief explanation of key portions of the Lua code.
+
+#+begin_src lua :tangle clicky.lua
+require 'cairo'
+require 'imlib2'
+#+end_src
+Flag to get window position in clickfunction, assumes it doesn't move.
+#+begin_src lua :tangle clicky.lua
+click_start=1 -- this starts the clickfunction
+#+end_src
+Main function that is called from Conky configuration (note that it is exposed by is prefix, other functions are invisible).
+Displays all images using ~image~ function, based on the current mouse position (acquired via ~clickfunction~).
+Parameters: none.
+Returns nothing.
+#+begin_src lua :tangle clicky.lua
+function conky_main()
+  if conky_window == nil then return end
+
+  local cs = cairo_xlib_surface_create(conky_window.display,
+                                       conky_window.drawable,
+                                       conky_window.visual,
+                                       conky_window.width,
+                                       conky_window.height)
+  cr = cairo_create(cs)
+
+  local updates = tonumber(conky_parse('${updates}'))
+  if updates > 5 then
+    localnowx, localnowy = clickfunction() -- current mouse pointer coordinates
+
+    image({file="Starwars3D1.png",   x=-110-localnowx/20, y=  0-localnowy/20})
+    image({file="Starwars3D2_1.png", x= 231-localnowx/40, y=180-localnowy/40})
+    image({file="Starwars3D2_2.png", x=1022-localnowx/40, y=  0-localnowy/40})
+    image({file="Starwars3D3.png",   x= 131-localnowx/60, y= 51-localnowy/60})
+    image({file="Starwars3D4.png",   x= 103+localnowx/55, y=123+localnowy/55})
+    image({file="Starwars3D5.png",   x=  86+localnowx/15, y= 91+localnowy/15})
+  end -- if updates > 5
+  cairo_destroy(cr)
+  cairo_surface_destroy(cs)
+  cr = nil
+end -- end main function
+#+end_src
+Displays image at specified location at full size using Imlib2.
+Parameters:
+- im: a table containing:
+  - file: /required/ path to image, interpreted as *string*.
+  - x: /optional/ X-coordinate, interpreted as *number*, =0= if not provided.
+  - y: /optional/ Y-coordinate, interpreted as *number*, =0= if not provided.
+Returns nothing.
+#+begin_src lua :tangle clicky.lua
+function image(im)
+  x=nil
+  x=(im.x or 0)
+  y=nil
+  y=(im.y or 0)
+  file=nil
+  file=tostring(im.file)
+  if file==nil then print("set image file") end
+  ---------------------------------------------
+  local show = imlib_load_image(file)
+  if show == nil then return end
+  imlib_context_set_image(show)
+  local width=imlib_image_get_width()
+  local height=imlib_image_get_height()
+  imlib_context_set_image(show)
+  imlib_render_image_on_drawable(x, y)
+  imlib_free_image()
+  show=nil
+end -- function image
+#+end_src
+Acquires current mouse cursor coordinates via ~xdotool~ and ~xwininfo~.
+The top-left corner is (0,0).
+Retained function name from mrpeachy.
+Parameters: none.
+Returns:
+- localnowx: current X-coordinate of mouse
+- localnowy: current Y-coordinate of mouse
+#+begin_src lua :tangle clicky.lua
+function clickfunction()
+  if click_start==1 then
+    xdot=conky_parse("${if_running xdotool}1${else}0${endif}")
+    if tonumber(xdot)==1 then
+      os.execute("killall xdotool && echo 'xdo killed' &")
+    end
+    os.execute("xdotool search --name 'clicky' behave %@ mouse-click getmouselocation >> /tmp/xdo &")
+    local f = io.popen("xwininfo -name 'clicky' | grep 'Absolute'")
+    geometry = f:read("*a")
+    f:close()
+    local geometry=string.gsub(geometry,"[\n]","")
+    print(geometry)
+    s,f,abstlx=string.find(geometry,"X%p%s*(%d*)")
+    s,f,abstly=string.find(geometry,"Y%p%s*(%d*)")
+    click_start=nil
+  end -- if click_start=1
+  -- get current location
+  os.execute("xdotool getmouselocation > /tmp/xdonow ")
+  local f=io.open("/tmp/xdonow")
+  mousenow=f:read()
+  f:close()
+  local s,f,mousenowx=string.find(mousenow,"x%p(%d*)%s")
+  local s,f,mousenowy=string.find(mousenow,"y%p(%d*)%s")
+  localnowx=tonumber(mousenowx)-abstlx
+  localnowy=tonumber(mousenowy)-abstly
+
+  return localnowx,localnowy
+end -- clickfunction
+#+end_src
+
+** Conky configuration
+Settings most likely to be changed are positioned close to the top.
+
+Frame rate, in seconds per frame (so currently aiming for 25fps, but limited by single-threaded CPU performance):
+#+begin_src lua :tangle conky.conf
+conky.config = {
+update_interval   = .04,
+#+end_src
+Resolution, though currently everything in the ~clicky.lua~ is hard-coded for 1080p:
+#+begin_src lua :tangle conky.conf
+minimum_width     = 1920,
+minimum_height    = 1080,
+#+end_src
+Positioning of the rectangle specified above:
+#+begin_src lua :tangle conky.conf
+gap_x             = 0,
+gap_y             = 0,
+alignment         = 'top_left',
+#+end_src
+Options necessary for finding the window in ~clickly.lua~, with src_lua[:exports code]{double_buffer} thrown in for good measure:
+#+begin_src lua :tangle conky.conf
+double_buffer     = true,
+own_window        = true,
+own_window_hints  = 'undecorated,sticky,below,skip_taskbar,skip_pager',
+#+end_src
+Reference Lua script and function inside it to run, as well as specifying a name for the Conky window for Lua to pass to ~xwininfo~:
+#+begin_src lua :tangle conky.conf
+own_window_title  = 'clicky',
+lua_load          = 'clicky.lua',
+lua_draw_hook_pre = 'main',
+};
+#+end_src
+And since everything is drawn by Lua/Cairo/Imlib2, src_lua[:exports code]{conky.text} is empty.
+#+begin_src lua :tangle conky.conf
+conky.text = [[]];
+#+end_src
