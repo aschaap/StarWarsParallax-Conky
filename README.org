@@ -9,8 +9,11 @@ The Lua code is based on "interactive conky" Lua by mrpeachy [2].
 - Includes simplified image function from brndnmtthws [3].
 
 [1] https://www.deviantart.com/nirosat/art/Rainmeter-3D-XWing-Parallax-612069530
+
 [2] https://crunchbang.org/forums/viewtopic.php?pid=199493#p199493
+
 [3] https://github.com/brndnmtthws/conky/wiki/Using-Lua-scripts-(Part-13):-Useful-functions-and-code
+
 ** Lua code
 A brief explanation of key portions of the Lua code.
 
@@ -27,7 +30,9 @@ click_start=1 -- this starts the clickfunction
 *** conky_main()
 Main function that is called from Conky configuration (note that it is exposed by is prefix, other functions are invisible).
 Displays all images using ~image~ function, based on the current mouse position (acquired via ~clickfunction~).
+
 Parameters: none.
+
 Returns nothing.
 #+begin_src lua :tangle clicky.lua
 function conky_main()
@@ -59,11 +64,13 @@ end -- end main function
 
 *** image(im)
 Displays image at specified location at full size using Imlib2.
+
 Parameters:
 - im: a table containing:
   - file: /required/ path to image, interpreted as *string*.
   - x: /optional/ X-coordinate, interpreted as *number*, =0= if not provided.
   - y: /optional/ Y-coordinate, interpreted as *number*, =0= if not provided.
+
 Returns nothing.
 #+begin_src lua :tangle clicky.lua
 function image(im)
@@ -91,7 +98,9 @@ end -- function image
 Acquires current mouse cursor coordinates via ~xdotool~ and ~xwininfo~.
 The top-left corner is (0,0).
 Retained function name from mrpeachy.
+
 Parameters: none.
+
 Returns:
 - localnowx: current X-coordinate of mouse
 - localnowy: current Y-coordinate of mouse
@@ -158,7 +167,7 @@ lua_load          = 'clicky.lua',
 lua_draw_hook_pre = 'main',
 };
 #+end_src
-And since everything is drawn by Lua/Cairo/Imlib2, ~conky.text~ is empty.
+And since everything is drawn by Lua/Cairo/Imlib2, ~conky.text~ is empty:
 #+begin_src lua :tangle conky.conf
 conky.text = [[]];
 #+end_src
