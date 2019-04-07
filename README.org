@@ -2,25 +2,29 @@
 Dependencies: Conky with Lua and Cairo support and Imlib2 support in Lua, along with ~xdotool~ and ~xwininfo~.
 Limitations: The background image limits the maximum size to 1080p, and this size is hard-coded into the Lua file.
 
-The original idea and images are from nirosat's Rainmeter skin:
-https://www.deviantart.com/nirosat/art/Rainmeter-3D-XWing-Parallax-612069530
-The Lua code is based on "interactive conky" Lua by mrpeachy:
-https://crunchbang.org/forums/viewtopic.php?pid=199493#p199493
-- includes simplified image function from brndnmtthws:
-https://github.com/brndnmtthws/conky/wiki/Using-Lua-scripts-(Part-13):-Useful-functions-and-code
+The original idea and images are from nirosat's Rainmeter skin [1].
 
 
+The Lua code is based on "interactive conky" Lua by mrpeachy [2].
+- Includes simplified image function from brndnmtthws [3].
+
+[1] https://www.deviantart.com/nirosat/art/Rainmeter-3D-XWing-Parallax-612069530
+[2] https://crunchbang.org/forums/viewtopic.php?pid=199493#p199493
+[3] https://github.com/brndnmtthws/conky/wiki/Using-Lua-scripts-(Part-13):-Useful-functions-and-code
 ** Lua code
 A brief explanation of key portions of the Lua code.
 
+Necessary boilerplate imports:
 #+begin_src lua :tangle clicky.lua
 require 'cairo'
 require 'imlib2'
 #+end_src
-Flag to get window position in clickfunction, assumes it doesn't move.
+
+Flag to get window position in clickfunction, assumes it doesn't move:
 #+begin_src lua :tangle clicky.lua
 click_start=1 -- this starts the clickfunction
 #+end_src
+*** conky_main()
 Main function that is called from Conky configuration (note that it is exposed by is prefix, other functions are invisible).
 Displays all images using ~image~ function, based on the current mouse position (acquired via ~clickfunction~).
 Parameters: none.
@@ -52,6 +56,8 @@ function conky_main()
   cr = nil
 end -- end main function
 #+end_src
+
+*** image(im)
 Displays image at specified location at full size using Imlib2.
 Parameters:
 - im: a table containing:
@@ -80,6 +86,8 @@ function image(im)
   show=nil
 end -- function image
 #+end_src
+
+*** clickfunction()
 Acquires current mouse cursor coordinates via ~xdotool~ and ~xwininfo~.
 The top-left corner is (0,0).
 Retained function name from mrpeachy.
@@ -119,7 +127,7 @@ end -- clickfunction
 #+end_src
 
 ** Conky configuration
-Settings most likely to be changed are positioned close to the top.
+A bare-bones configuration to call the Lua code above. Settings most likely to be changed are positioned close to the top.
 
 Frame rate, in seconds per frame (so currently aiming for 25fps, but limited by single-threaded CPU performance):
 #+begin_src lua :tangle conky.conf
@@ -137,7 +145,7 @@ gap_x             = 0,
 gap_y             = 0,
 alignment         = 'top_left',
 #+end_src
-Options necessary for finding the window in ~clickly.lua~, with src_lua[:exports code]{double_buffer} thrown in for good measure:
+Options necessary for finding the window in ~clickly.lua~, with ~double_buffer~ thrown in for good measure:
 #+begin_src lua :tangle conky.conf
 double_buffer     = true,
 own_window        = true,
@@ -150,7 +158,7 @@ lua_load          = 'clicky.lua',
 lua_draw_hook_pre = 'main',
 };
 #+end_src
-And since everything is drawn by Lua/Cairo/Imlib2, src_lua[:exports code]{conky.text} is empty.
+And since everything is drawn by Lua/Cairo/Imlib2, ~conky.text~ is empty.
 #+begin_src lua :tangle conky.conf
 conky.text = [[]];
 #+end_src
