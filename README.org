@@ -1,9 +1,11 @@
 * Star Wars Parallax Background Conky
+#+CAPTION: Animated GIF of the parallax effect achieved.
+[[example.gif]]
+
 Dependencies: Conky with Lua and Cairo support and Imlib2 support in Lua, along with ~xdotool~ and ~xwininfo~.
 Limitations: The background image limits the maximum size to 1080p, and this size is hard-coded into the Lua file.
 
 The original idea and images are from nirosat's Rainmeter skin [1].
-
 
 The Lua code is based on "interactive conky" Lua by mrpeachy [2].
 - Includes simplified image function from brndnmtthws [3].
